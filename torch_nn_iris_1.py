@@ -127,4 +127,21 @@ with torch.no_grad():
     print(f'correct {correct}')
         
 
+# add new data
+# with torch.no_grad():
+#     new_iris = torch.tensor([4.7, 3.2, 1.3, 0.2])
+#     print(model(new_iris)) # predicts "0 - Setosa"
+
+#     # should be a 2 - "Virginica"
+#     newer_iris = torch.tensor([5.9, 3.0, 5.1, 1.8])
+#     print(model(newer_iris)) # predicts 2
+
+# save trained network model
+torch.save(model.state_dict(), 'data/torch_nn_iris_1_model.pt')
+
+new_model = Model()
+new_model.load_state_dict(torch.load('data/torch_nn_iris_1_model.pt'))
+
+print(new_model.eval())
+
 apple = 1
