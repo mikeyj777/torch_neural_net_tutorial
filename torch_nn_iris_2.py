@@ -9,7 +9,10 @@ from sklearn.model_selection import train_test_split
 # parameters
 rand_seed = 41
 lr = 0.01
+test_size = 0.2
 epochs = 100
+output_every_x_epochs = epochs // 10
+
 
 # create model class that inherits nn.Module
 class Model(nn.Module):
@@ -33,7 +36,7 @@ class Model(nn.Module):
     
     def forward(self, x):
         x = F.relu(self.fc1(x)) # relu - value above zero.  zero otherwise
-        x = F.relu(self.fx2(x))
+        x = F.relu(self.fc2(x))
         x = self.out(x)
 
         return x
@@ -64,7 +67,7 @@ X = X.values
 
 y = my_df['variety'].values
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=rand_seed)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=rand_seed)
 
 X_train = torch.FloatTensor(X_train)
 X_test = torch.FloatTensor(X_test)
@@ -76,20 +79,52 @@ criterion = nn.CrossEntropyLoss()
 
 # choose Adam optimizer, set learning rate
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 losses = []
 
-for _ in range(epochs):
+for i in range(epochs):
     # get predicted results
-    y_pred = model.forward(X,X_train)
+    y_pred = model.forward(X_train)
 
     # measure loss
     loss = criterion(y_pred, y_train)
-    losses.append(loss)
+    loss_np = loss.detach().numpy()
+    loss_val = loss_np
+    losses.append(loss_val)
 
+    if i % output_every_x_epochs == 0:
+        print(f'epoch: {i}. loss: {loss}')
+
+    # back prop - take error rate in forward prop, feed back thru network to fine tune weights
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+
+plt.plot(range(epochs), losses)
+plt.ylabel('error')
+plt.xlabel('Epoch')
+# plt.show()
+
+# evaluate model on test data set
+with torch.no_grad(): # turn off back prop
+    y_eval = model.forward(X_test) #X_test - features from test set.  y_eval is the preds from it
+    loss = criterion(y_eval, y_test)
+    print(f'test loss: {loss}')
+
+correct= 0
+with torch.no_grad():
+    for i, data in enumerate(X_test):
+        y_val = model.forward(data)
+        y_val_item = y_val.argmax().item()
+        #what type of flower our network thinks it is
+        check = y_val_item == y_test[i]
+        print(f'iter: {i} | {str(y_val)} | y_val vs y_test: {y_val_item} vs {y_test[i]} good? {check}')
+        if check:
+            correct += 1
     
-
-
+    print(f'correct {correct}')
+        
 
 apple = 1
